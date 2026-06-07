@@ -7,7 +7,7 @@
 #include <memory>
 
 class PMTree {
- public:
+public:
     struct Node {
         char value;
         std::vector<std::shared_ptr<Node>> children;
@@ -19,17 +19,20 @@ class PMTree {
 
     std::shared_ptr<Node> getRoot() const { return root_; }
 
- private:
+private:
     std::shared_ptr<Node> root_;
 
     void buildTree(std::shared_ptr<Node> parent,
-                   const std::vector<char>& remaining);
+        const std::vector<char>& remaining);
 };
 
+// Задание №2: Получение всех перестановок
 std::vector<std::vector<char>> getAllPerms(const PMTree& tree);
 
+// Задание №3: Получение перестановки по номеру (медленный способ)
 std::vector<char> getPerm1(const PMTree& tree, int num);
 
+// Задание №3: Получение перестановки по номеру (быстрый способ)
 std::vector<char> getPerm2(const PMTree& tree, int num);
 
 #endif  // INCLUDE_TREE_H_
