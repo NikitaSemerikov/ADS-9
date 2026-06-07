@@ -5,26 +5,26 @@
 #include <vector>
 
 struct TreeNode {
-    char data;
-    std::vector<TreeNode*> descendants;
+    char value;
+    std::vector<TreeNode*> children;
 
-    explicit TreeNode(char val) : data(val) {}
+    explicit TreeNode(char val) : value(val) {}
     ~TreeNode();
 };
 
 class PMTree {
  private:
-    TreeNode* origin;
-    void constructTree(TreeNode* current, const std::vector<char>& available);
+    TreeNode* root;
+    void buildTree(TreeNode* node, const std::vector<char>& elements);
 
  public:
-    explicit PMTree(const std::vector<char>& symbols);
+    explicit PMTree(const std::vector<char>& elements);
     ~PMTree();
-    TreeNode* getOrigin() const { return origin; }
+    TreeNode* getRoot() const { return root; }
 };
 
-std::vector<std::vector<char>> extractAllPermutations(const PMTree& permTree);
-std::vector<char> fetchPermutationByNumber1(PMTree& permTree, int position);
-std::vector<char> fetchPermutationByNumber2(PMTree& permTree, int position);
+std::vector<std::vector<char>> getAllPerms(const PMTree& tree);
+std::vector<char> getPerm1(PMTree& tree, int num);
+std::vector<char> getPerm2(PMTree& tree, int num);
 
 #endif // INCLUDE_TREE_H_
