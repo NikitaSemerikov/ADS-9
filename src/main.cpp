@@ -5,60 +5,65 @@
 #include "tree.h"
 
 int main() {
-    std::vector<char> initialSet = {'1', '2', '3'};
-    PMTree permutationTree(initialSet);
+    std::vector<char> in = {'1', '2', '3'};
+    PMTree tree(in);
 
-    std::vector<std::vector<char>> allPermutations = extractAllPermutations(permutationTree);
+    std::vector<std::vector<char>> perms = getAllPerms(tree);
     std::cout << "All permutations:\n";
-    for (const std::vector<char>& singlePerm : allPermutations) {
-        for (char symbol : singlePerm) std::cout << symbol;
+    for (const std::vector<char>& perm : perms) {
+        for (char c : perm) std::cout << c;
         std::cout << "\n";
     }
     std::cout << "\n";
 
     std::cout << "Permutations by index:\n";
-    std::vector<char> firstPermutation = fetchPermutationByNumber1(permutationTree, 1);
-    std::cout << "fetchPermutationByNumber1(1): ";
-    for (char symbol : firstPermutation) std::cout << symbol;
+    std::vector<char> p1 = getPerm1(tree, 1);
+    std::cout << "getPerm1(1): ";
+    for (char c : p1) std::cout << c;
     std::cout << "\n";
 
-    std::vector<char> secondPermutation = fetchPermutationByNumber2(permutationTree, 2);
-    std::cout << "fetchPermutationByNumber2(2): ";
-    for (char symbol : secondPermutation) std::cout << symbol;
+    std::vector<char> p2 = getPerm2(tree, 2);
+    std::cout << "getPerm2(2): ";
+    for (char c : p2) std::cout << c;
     std::cout << "\n\n";
 
     std::cout << "Computational experiment:\n";
-    std::vector<int> dimensionSizes = {3, 4, 5};
+    std::vector<int> sizes = {3, 4, 5};
 
-    for (int currentSize : dimensionSizes) {
-        std::vector<char> testData;
-        for (int idx = 0; idx < currentSize; ++idx) testData.push_back('1' + idx);
-        PMTree testTree(testData);
+    for (int n : sizes) {
+        std::vector<char> test_input;
+        for (int i = 0; i < n; ++i) {
+            test_input.push_back('1' + i);
+        }
+        PMTree test_tree(test_input);
 
-        std::chrono::high_resolution_clock::time_point startTime =
-        std::chrono::high_resolution_clock::now();
-        extractAllPermutations(testTree);
-        std::chrono::high_resolution_clock::time_point endTime =
-        std::chrono::high_resolution_clock::now();
-        std::chrono::microseconds durationAll =
-        std::chrono::duration_cast<std::chrono::microseconds>(endTime - startTime);
+        std::chrono::high_resolution_clock::time_point start =
+            std::chrono::high_resolution_clock::now();
+        getAllPerms(test_tree);
+        std::chrono::high_resolution_clock::time_point end =
+            std::chrono::high_resolution_clock::now();
+        std::chrono::microseconds time_all =
+            std::chrono::duration_cast<std::chrono::microseconds>(
+                end - start);
 
-        startTime = std::chrono::high_resolution_clock::now();
-        fetchPermutationByNumber1(testTree, 1);
-        endTime = std::chrono::high_resolution_clock::now();
-        std::chrono::microseconds durationPerm1 =
-        std::chrono::duration_cast<std::chrono::microseconds>(endTime - startTime);
+        start = std::chrono::high_resolution_clock::now();
+        getPerm1(test_tree, 1);
+        end = std::chrono::high_resolution_clock::now();
+        std::chrono::microseconds time_perm1 =
+            std::chrono::duration_cast<std::chrono::microseconds>(
+                end - start);
 
-        startTime = std::chrono::high_resolution_clock::now();
-        fetchPermutationByNumber2(testTree, 1);
-        endTime = std::chrono::high_resolution_clock::now();
-        std::chrono::microseconds durationPerm2 =
-        std::chrono::duration_cast<std::chrono::microseconds>(endTime - startTime);
+        start = std::chrono::high_resolution_clock::now();
+        getPerm2(test_tree, 1);
+        end = std::chrono::high_resolution_clock::now();
+        std::chrono::microseconds time_perm2 =
+            std::chrono::duration_cast<std::chrono::microseconds>(
+                end - start);
 
-        std::cout << "n=" << currentSize
-                  << ", extractAllPermutations: " << durationAll.count() << " us"
-                  << ", fetchPermutationByNumber1: " << durationPerm1.count() << " us"
-                  << ", fetchPermutationByNumber2: " << durationPerm2.count() << " us\n";
+        std::cout << "n=" << n
+                  << ", getAllPerms: " << time_all.count() << " us"
+                  << ", getPerm1: " << time_perm1.count() << " us"
+                  << ", getPerm2: " << time_perm2.count() << " us\n";
     }
 
     return 0;
