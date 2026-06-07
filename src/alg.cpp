@@ -1,127 +1,143 @@
 // Copyright 2022 NNTU-CS
-
-#include "include/tree.h"
-#include <vector>
-#include <memory>
+#include <cstdlib>
 #include <algorithm>
+#include <iostream>
+#include <locale>
+#include <vector>
+#include "tree.h"
 
-PMTree::PMTree(const std::vector<char>& symbols) {
-    root_ = std::make_shared<Node>('\0');
-    buildTree(root_, symbols);
+TreeNode::~TreeNode() {
+    for (auto offspring : descendants) {
+        delete offspring;
+    }
 }
 
-void PMTree::buildTree(std::shared_ptr<Node> parent,
-                       const std::vector<char>& remaining) {
-    if (remaining.empty()) {
-        return;
+void traverseAndCollect(TreeNode* currentNode, std::vector<char>& currentSequence,
+                  std::vector<std::vector<char>>& allSequences) {
+    if (!currentNode) return;
+
+    currentSequence.push_back(currentNode->data);
+
+    if (currentNode->descendants.empty()) {
+        allSequences.push_back(currentSequence);
+    } else {
+        for (auto offspring : currentNode->descendants) {
+            traverseAndCollect(offspring, currentSequence, allSequences);
+        }
     }
 
-    for (size_t i = 0; i < remaining.size(); ++i) {
-        auto child = std::make_shared<Node>(remaining[i]);
-        parent->children.push_back(child);
+    currentSequence.pop_back();
+}
 
-        std::vector<char> newRemaining;
-        for (size_t j = 0; j < remaining.size(); ++j) {
-            if (j != i) {
-                newRemaining.push_back(remaining[j]);
+void PMTree::constructTree(TreeNode* parentNode, const std::vector<char>& remainingSymbols) {
+    if (remainingSymbols.empty()) return;
+
+    for (const char& symbol : remainingSymbols) {
+        TreeNode* newChild = new TreeNode(symbol);
+        parentNode->descendants.push_back(newChild);
+
+        std::vector<char> updatedRemaining;
+        for (const char& sym : remainingSymbols) {
+            if (sym != symbol) {
+                updatedRemaining.push_back(sym);
             }
         }
-        buildTree(child, newRemaining);
+
+        constructTree(newChild, updatedRemaining);
     }
 }
 
-void collectPerms(const std::shared_ptr<PMTree::Node>& node,
-                  std::vector<char>& current,
-                  std::vector<std::vector<char>>& result) {
-    if (node->children.empty()) {
-        if (!current.empty()) {
-            result.push_back(current);
-        }
-        return;
-    }
-
-    for (const auto& child : node->children) {
-        current.push_back(child->value);
-        collectPerms(child, current, result);
-        current.pop_back();
-    }
+PMTree::PMTree(const std::vector<char>& inputSymbols) : origin(nullptr) {
+    std::vector<char> sortedSymbols = inputSymbols;
+    std::sort(sortedSymbols.begin(), sortedSymbols.end());
+    origin = new TreeNode('\0');
+    constructTree(origin, sortedSymbols);
 }
 
-std::vector<std::vector<char>> getAllPerms(const PMTree& tree) {
-    std::vector<std::vector<char>> result;
-    std::vector<char> current;
-    collectPerms(tree.getRoot(), current, result);
-    return result;
+PMTree::~PMTree() {
+    delete origin;
 }
 
-long long factorial(int n) {
-    long long result = 1;
-    for (int i = 2; i <= n; ++i) {
-        result *= i;
+std::vector<std::vector<char>> extractAllPermutations(const PMTree& permTree) {
+    std::vector<std::vector<char>> allPermutations;
+    std::vector<char> currentPermutation;
+
+    for (auto firstLevel : permTree.getOrigin()->descendants) {
+        traverseAndCollect(firstLevel, currentPermutation, allPermutations);
     }
-    return result;
+
+    return allPermutations;
 }
 
-std::vector<char> getPerm1(const PMTree& tree, int num) {
-    if (num < 1) {
-        return std::vector<char>();
+std::vector<char> fetchPermutationByNumber1(PMTree& permTree, int requestedNumber) {
+    if (requestedNumber <= 0) return {};
+
+    auto allPermutations = extractAllPermutations(permTree);
+    if (requestedNumber > static_cast<int>(allPermutations.size())) {
+        return {};
     }
-    
-    std::vector<std::vector<char>> allPerms = getAllPerms(tree);
-    if (static_cast<size_t>(num) > allPerms.size()) {
-        return std::vector<char>();
-    }
-    return allPerms[num - 1];
+
+    return allPermutations[requestedNumber - 1];
 }
 
-bool getPermFast(const std::shared_ptr<PMTree::Node>& node,
-                 std::vector<char>& result,
-                 int& remainingNum,
-                 int currentLevel,
-                 int totalLevels) {
-    if (node->children.empty()) {
-        return remainingNum == 1;
+int calculateLeafCount(TreeNode* subtreeRoot) {
+    if (!subtreeRoot) return 0;
+    if (subtreeRoot->descendants.empty()) return 1;
+
+    int totalLeaves = 0;
+    for (auto offspring : subtreeRoot->descendants) {
+        totalLeaves += calculateLeafCount(offspring);
     }
+    return totalLeaves;
+}
 
-    int remainingLevels = totalLevels - currentLevel - 1;
-    long long subtreeSize = factorial(remainingLevels);
+bool navigateToDesiredPermutation(TreeNode* currentPosition, int& remainingNumber, 
+                                   std::vector<char>& accumulatedPath) {
+    if (!currentPosition) return false;
 
-    for (const auto& child : node->children) {
-        if (remainingNum > subtreeSize) {
-            remainingNum -= subtreeSize;
+    accumulatedPath.push_back(currentPosition->data);
+
+    if (currentPosition->descendants.empty()) {
+        if (remainingNumber == 1) {
+            return true;
         } else {
-            result.push_back(child->value);
-            return getPermFast(child, result, remainingNum, 
-                             currentLevel + 1, totalLevels);
+            remainingNumber--;
+            accumulatedPath.pop_back();
+            return false;
         }
     }
+
+    for (auto nextBranch : currentPosition->descendants) {
+        int leavesInBranch = calculateLeafCount(nextBranch);
+        if (remainingNumber <= leavesInBranch) {
+            if (navigateToDesiredPermutation(nextBranch, remainingNumber, accumulatedPath)) {
+                return true;
+            }
+        } else {
+            remainingNumber -= leavesInBranch;
+        }
+    }
+
+    accumulatedPath.pop_back();
     return false;
 }
 
-std::vector<char> getPerm2(const PMTree& tree, int num) {
-    if (num < 1) {
-        return std::vector<char>();
+std::vector<char> fetchPermutationByNumber2(PMTree& permTree, int requestedNumber) {
+    if (requestedNumber <= 0) return {};
+
+    std::vector<char> foundPermutation;
+
+    for (auto firstBranch : permTree.getOrigin()->descendants) {
+        int leavesInFirstBranch = calculateLeafCount(firstBranch);
+        if (requestedNumber <= leavesInFirstBranch) {
+            int targetPosition = requestedNumber;
+            if (navigateToDesiredPermutation(firstBranch, targetPosition, foundPermutation)) {
+                return foundPermutation;
+            }
+        } else {
+            requestedNumber -= leavesInFirstBranch;
+        }
     }
 
-    int depth = 0;
-    auto temp = tree.getRoot();
-    while (!temp->children.empty()) {
-        depth++;
-        temp = temp->children[0];
-    }
-
-    long long totalPerms = factorial(depth);
-    if (static_cast<long long>(num) > totalPerms) {
-        return std::vector<char>();
-    }
-
-    std::vector<char> result;
-    result.reserve(depth);
-    int remainingNum = num;
-
-    if (getPermFast(tree.getRoot(), result, remainingNum, 0, depth)) {
-        return result;
-    }
-    
-    return std::vector<char>();
+    return {};
 }
